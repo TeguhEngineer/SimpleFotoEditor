@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimpleFotoEditor - Alat Edit Foto Online Simple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Library untuk slider yang lebih responsif -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+
+    <!-- Library untuk crop image -->
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
+
+    <!-- Library untuk efek lanjutan -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        dark: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles untuk noUiSlider */
+        .noUi-connect {
+            background: #6366f1;
+        }
+
+        .noUi-handle {
+            background: #8b5cf6;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Style untuk canvas container */
+        .canvas-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 500px;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+        }
+
+        /* Style untuk crop overlay */
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10;
+        }
+
+        /* Style untuk efek loading */
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+    <!-- Header Sederhana -->
+    <header class="bg-white shadow-sm py-4">
+        <div class="container mx-auto px-4 flex justify-center items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-camera-retro text-2xl text-primary"></i>
+                <h1 class="text-xl font-bold text-dark">SimpleFotoEditor</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Editor Section -->
+        <section class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+                <!-- Sidebar Tools -->
+                <div class="lg:col-span-1 bg-gray-50 p-4 border-r border-gray-200">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Alat Edit</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="adjustmentsBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center border border-primary">
+                                <i class="fas fa-sliders-h text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Penyesuaian</span>
+                            </button>
+                            <button id="filtersBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-magic text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Filter</span>
+                            </button>
+                            <button id="cropBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-crop-alt text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Potong</span>
+                            </button>
+                            <button id="textBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-font text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Teks</span>
+                            </button>
+                            <button id="stickersBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-sticky-note text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Stiker</span>
+                            </button>
+                            <button id="drawBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-paint-brush text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Gambar</span>
+                            </button>
+                            <button id="effectsBtn"
+                                class="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition text-center">
+                                <i class="fas fa-magic text-primary text-xl mb-1"></i>
+                                <span class="block text-sm">Efek</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Adjustments Panel -->
+                    <div id="adjustmentsPanel" class="mb-6">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Penyesuaian</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Kecerahan</span>
+                                    <span id="brightnessValue" class="text-sm">0%</span>
+                                </div>
+                                <div id="brightnessSlider" class="slider"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Kontras</span>
+                                    <span id="contrastValue" class="text-sm">0%</span>
+                                </div>
+                                <div id="contrastSlider" class="slider"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Saturasi</span>
+                                    <span id="saturationValue" class="text-sm">0%</span>
+                                </div>
+                                <div id="saturationSlider" class="slider"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Rotasi</span>
+                                    <span id="rotationValue" class="text-sm">0°</span>
+                                </div>
+                                <div id="rotationSlider" class="slider"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Eksposur</span>
+                                    <span id="exposureValue" class="text-sm">0%</span>
+                                </div>
+                                <div id="exposureSlider" class="slider"></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm">Kekaburan</span>
+                                    <span id="blurValue" class="text-sm">0px</span>
+                                </div>
+                                <div id="blurSlider" class="slider"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters Panel -->
+                    <div id="filtersPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Filter</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="none">
+                                <div class="absolute inset-0 bg-gray-800 opacity-0"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Normal</span>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="grayscale">
+                                <div class="absolute inset-0 bg-gray-800 opacity-30"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Grayscale</span>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="sepia">
+                                <div class="absolute inset-0 bg-yellow-800 opacity-30"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Sepia</span>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="invert">
+                                <div class="absolute inset-0 bg-purple-800 opacity-30"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Invert</span>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="vintage">
+                                <div class="absolute inset-0 bg-amber-800 opacity-30"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Vintage</span>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer filter-option"
+                                data-filter="clarendon">
+                                <div class="absolute inset-0 bg-blue-300 opacity-30"></div>
+                                <span class="absolute bottom-1 left-1 text-xs text-white font-medium">Clarendon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crop Panel -->
+                    <div id="cropPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Potong Gambar</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="cropRatio1"
+                                    class="bg-white border border-gray-300 py-2 rounded-md text-sm crop-ratio active"
+                                    data-ratio="free">Bebas</button>
+                                <button id="cropRatio2"
+                                    class="bg-white border border-gray-300 py-2 rounded-md text-sm crop-ratio"
+                                    data-ratio="1">1:1</button>
+                                <button id="cropRatio3"
+                                    class="bg-white border border-gray-300 py-2 rounded-md text-sm crop-ratio"
+                                    data-ratio="4/3">4:3</button>
+                                <button id="cropRatio4"
+                                    class="bg-white border border-gray-300 py-2 rounded-md text-sm crop-ratio"
+                                    data-ratio="16/9">16:9</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="applyCropBtn"
+                                    class="flex-1 bg-primary text-white py-2 rounded-md">Terapkan</button>
+                                <button id="cancelCropBtn"
+                                    class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md">Batal</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Text Panel -->
+                    <div id="textPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Tambah Teks</h3>
+                        <div class="space-y-3">
+                            <input type="text" id="textInput" placeholder="Ketik teks di sini"
+                                class="w-full p-2 border border-gray-300 rounded-md">
+                            <div>
+                                <label class="text-sm">Ukuran Font</label>
+                                <div id="fontSizeSlider" class="slider"></div>
+                                <span id="fontSizeValue" class="text-xs">24px</span>
+                            </div>
+                            <div>
+                                <label class="text-sm">Warna Teks</label>
+                                <input type="color" id="textColorPicker" value="#000000"
+                                    class="w-full h-8 rounded-md">
+                            </div>
+                            <div>
+                                <label class="text-sm">Jenis Font</label>
+                                <select id="fontFamilySelect" class="w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Helvetica">Helvetica</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Georgia">Georgia</option>
+                                </select>
+                            </div>
+                            <button id="addTextBtn" class="w-full bg-primary text-white py-2 rounded-md">Tambah
+                                Teks</button>
+                        </div>
+                    </div>
+
+                    <!-- Stickers Panel -->
+                    <div id="stickersPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Stiker</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="heart">
+                                <i
+                                    class="fas fa-heart text-red-500 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="star">
+                                <i
+                                    class="fas fa-star text-yellow-500 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="smile">
+                                <i
+                                    class="fas fa-smile text-yellow-400 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="thumbs-up">
+                                <i
+                                    class="fas fa-thumbs-up text-blue-500 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="camera">
+                                <i
+                                    class="fas fa-camera text-gray-700 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                            <div class="aspect-square bg-gray-200 rounded-md overflow-hidden relative cursor-pointer sticker-option"
+                                data-sticker="music">
+                                <i
+                                    class="fas fa-music text-purple-500 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Drawing Panel -->
+                    <div id="drawingPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Alat Gambar</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm">Warna Gambar</label>
+                                <input type="color" id="drawColorPicker" value="#ff0000"
+                                    class="w-full h-8 rounded-md">
+                            </div>
+                            <div>
+                                <label class="text-sm">Ukuran Kuas</label>
+                                <div id="brushSizeSlider" class="slider"></div>
+                                <span id="brushSizeValue" class="text-xs">5px</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="startDrawingBtn"
+                                    class="flex-1 bg-primary text-white py-2 rounded-md">Mulai Menggambar</button>
+                                <button id="clearDrawingBtn"
+                                    class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Effects Panel -->
+                    <div id="effectsPanel" class="mb-6 hidden">
+                        <h3 class="text-lg font-semibold text-dark mb-3">Efek Khusus</h3>
+                        <div class="space-y-3">
+                            <button id="vignetteBtn"
+                                class="w-full bg-white border border-gray-300 py-2 rounded-md text-sm">Efek
+                                Vignette</button>
+                            <button id="noiseBtn"
+                                class="w-full bg-white border border-gray-300 py-2 rounded-md text-sm">Tambah
+                                Noise</button>
+                            <button id="pixelateBtn"
+                                class="w-full bg-white border border-gray-300 py-2 rounded-md text-sm">Efek
+                                Pixelate</button>
+                            <button id="sharpenBtn"
+                                class="w-full bg-white border border-gray-300 py-2 rounded-md text-sm">Tajamkan
+                                Gambar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="lg:col-span-2 p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-dark">Pratinjau</h3>
+                        <div class="flex space-x-2">
+                            <button id="undoBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm">
+                                <i class="fas fa-undo mr-1"></i> Undo
+                            </button>
+                            <button id="redoBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm">
+                                <i class="fas fa-redo mr-1"></i> Redo
+                            </button>
+                            <button id="resetBtn" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm">
+                                <i class="fas fa-refresh mr-1"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex-1 bg-gray-100 rounded-lg flex items-center justify-center mb-4 min-h-[400px] relative overflow-hidden">
+                        <div id="uploadPlaceholder" class="text-center p-8 w-full">
+                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-500 mb-4">Unggah foto untuk mulai mengedit</p>
+                            <div class="flex justify-center">
+                                <button id="selectPhotoBtn" class="bg-primary text-white px-4 py-2 rounded-lg">
+                                    Pilih Foto
+                                </button>
+                            </div>
+                            <input type="file" id="fileInput" accept="image/*" class="hidden">
+                        </div>
+
+                        <div class="canvas-container">
+                            <canvas id="imageCanvas" class="hidden max-w-full max-h-full"></canvas>
+                            <div id="cropOverlay" class="crop-overlay"></div>
+                            <div id="loadingSpinner" class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <button id="downloadBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-download mr-1"></i> Unduh
+                        </button>
+                        <button id="saveBtn" class="bg-primary text-white px-6 py-2 rounded-lg font-medium">
+                            <i class="fas fa-save mr-1"></i> Simpan Perubahan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Sederhana -->
+    <footer class="bg-dark text-white py-6 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-4">
+                <i class="fas fa-camera-retro text-xl text-primary"></i>
+                <h3 class="text-lg font-bold">FotoEditor</h3>
+            </div>
+            <p class="text-gray-400">Alat edit foto sederhana yang dibuat dengan HTML, CSS, dan JavaScript.</p>
+            <div class="border-t border-gray-700 mt-4 pt-4 text-center text-gray-400">
+                <p>&copy; 2025 | <a href="https://teguhdev.vercel.app/" class="text-primary">Teguhdev.</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // State aplikasi
+        let currentImage = null;
+        let originalImage = null;
+        let canvas, ctx;
+        let history = [];
+        let historyIndex = -1;
+        let currentFilter = 'none';
+        let adjustments = {
+            brightness: 0,
+            contrast: 0,
+            saturation: 0,
+            rotation: 0,
+            exposure: 0,
+            blur: 0
+        };
+
+        // State untuk menggambar
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // State untuk teks
+        let textElements = [];
+
+        // State untuk stiker
+        let stickerElements = [];
+
+        // State untuk crop
+        let isCropping = false;
+        let cropper = null;
+        let currentCropRatio = 'free';
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup canvas
+            canvas = document.getElementById('imageCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Inisialisasi slider dengan noUiSlider
+            initializeSliders();
+
+            // Event listeners
+            setupEventListeners();
+        });
+
+        function initializeSliders() {
+            // Slider untuk penyesuaian gambar
+            const sliders = [{
+                    id: 'brightnessSlider',
+                    min: -100,
+                    max: 100,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'contrastSlider',
+                    min: -100,
+                    max: 100,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'saturationSlider',
+                    min: -100,
+                    max: 100,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'rotationSlider',
+                    min: 0,
+                    max: 360,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'exposureSlider',
+                    min: -100,
+                    max: 100,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'blurSlider',
+                    min: 0,
+                    max: 20,
+                    start: 0,
+                    step: 1
+                },
+                {
+                    id: 'fontSizeSlider',
+                    min: 10,
+                    max: 72,
+                    start: 24,
+                    step: 1
+                },
+                {
+                    id: 'brushSizeSlider',
+                    min: 1,
+                    max: 50,
+                    start: 5,
+                    step: 1
+                }
+            ];
+
+            sliders.forEach(sliderConfig => {
+                const slider = document.getElementById(sliderConfig.id);
+                if (slider) {
+                    noUiSlider.create(slider, {
+                        start: [sliderConfig.start],
+                        connect: [true, false],
+                        range: {
+                            'min': sliderConfig.min,
+                            'max': sliderConfig.max
+                        },
+                        step: sliderConfig.step
+                    });
+
+                    // Event listener untuk update nilai
+                    slider.noUiSlider.on('update', function(values) {
+                        const value = Math.round(values[0]);
+                        updateSliderValue(sliderConfig.id, value);
+                    });
+                }
+            });
+        }
+
+        function updateSliderValue(sliderId, value) {
+            switch (sliderId) {
+                case 'brightnessSlider':
+                    adjustments.brightness = value;
+                    document.getElementById('brightnessValue').textContent = value + '%';
+                    break;
+                case 'contrastSlider':
+                    adjustments.contrast = value;
+                    document.getElementById('contrastValue').textContent = value + '%';
+                    break;
+                case 'saturationSlider':
+                    adjustments.saturation = value;
+                    document.getElementById('saturationValue').textContent = value + '%';
+                    break;
+                case 'rotationSlider':
+                    adjustments.rotation = value;
+                    document.getElementById('rotationValue').textContent = value + '°';
+                    break;
+                case 'exposureSlider':
+                    adjustments.exposure = value;
+                    document.getElementById('exposureValue').textContent = value + '%';
+                    break;
+                case 'blurSlider':
+                    adjustments.blur = value;
+                    document.getElementById('blurValue').textContent = value + 'px';
+                    break;
+                case 'fontSizeSlider':
+                    document.getElementById('fontSizeValue').textContent = value + 'px';
+                    break;
+                case 'brushSizeSlider':
+                    document.getElementById('brushSizeValue').textContent = value + 'px';
+                    break;
+            }
+
+            if (sliderId !== 'fontSizeSlider' && sliderId !== 'brushSizeSlider') {
+                applyAdjustments();
+            }
+        }
+
+        function setupEventListeners() {
+            // Upload gambar
+            document.getElementById('selectPhotoBtn').addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+
+            document.getElementById('fileInput').addEventListener('change', handleImageUpload);
+
+            // Tool buttons
+            document.getElementById('adjustmentsBtn').addEventListener('click', function() {
+                showPanel('adjustmentsPanel');
+                setActiveButton(this);
+            });
+
+            document.getElementById('filtersBtn').addEventListener('click', function() {
+                showPanel('filtersPanel');
+                setActiveButton(this);
+            });
+
+            document.getElementById('cropBtn').addEventListener('click', function() {
+                showPanel('cropPanel');
+                setActiveButton(this);
+                if (currentImage && !isCropping) {
+                    startCropping();
+                }
+            });
+
+            document.getElementById('textBtn').addEventListener('click', function() {
+                showPanel('textPanel');
+                setActiveButton(this);
+            });
+
+            document.getElementById('stickersBtn').addEventListener('click', function() {
+                showPanel('stickersPanel');
+                setActiveButton(this);
+            });
+
+            document.getElementById('drawBtn').addEventListener('click', function() {
+                showPanel('drawingPanel');
+                setActiveButton(this);
+            });
+
+            document.getElementById('effectsBtn').addEventListener('click', function() {
+                showPanel('effectsPanel');
+                setActiveButton(this);
+            });
+
+            // Filter options
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    currentFilter = this.getAttribute('data-filter');
+                    applyFilter();
+                    saveToHistory();
+                });
+            });
+
+            // Crop options
+            document.querySelectorAll('.crop-ratio').forEach(ratio => {
+                ratio.addEventListener('click', function() {
+                    document.querySelectorAll('.crop-ratio').forEach(r => r.classList.remove('active',
+                        'border-primary'));
+                    this.classList.add('active', 'border-primary');
+                    currentCropRatio = this.getAttribute('data-ratio');
+                    if (cropper) {
+                        if (currentCropRatio === 'free') {
+                            cropper.setAspectRatio(NaN);
+                        } else {
+                            cropper.setAspectRatio(eval(currentCropRatio));
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('applyCropBtn').addEventListener('click', applyCrop);
+            document.getElementById('cancelCropBtn').addEventListener('click', cancelCrop);
+
+            // Sticker options
+            document.querySelectorAll('.sticker-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const stickerType = this.getAttribute('data-sticker');
+                    addSticker(stickerType);
+                });
+            });
+
+            // Text tools
+            document.getElementById('addTextBtn').addEventListener('click', addTextToImage);
+
+            // Drawing tools
+            document.getElementById('startDrawingBtn').addEventListener('click', toggleDrawing);
+            document.getElementById('clearDrawingBtn').addEventListener('click', clearDrawing);
+
+            // Effect tools
+            document.getElementById('vignetteBtn').addEventListener('click', applyVignette);
+            document.getElementById('noiseBtn').addEventListener('click', addNoise);
+            document.getElementById('pixelateBtn').addEventListener('click', applyPixelate);
+            document.getElementById('sharpenBtn').addEventListener('click', sharpenImage);
+
+            // Canvas events untuk menggambar
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events untuk perangkat mobile
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            // Action buttons
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+            document.getElementById('resetBtn').addEventListener('click', resetImage);
+            document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+            document.getElementById('saveBtn').addEventListener('click', saveImage);
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showLoading(true);
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // Setup canvas
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Resize jika gambar terlalu besar
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+
+                    if (height > maxHeight) {
+                        width = (maxHeight / height) * width;
+                        height = maxHeight;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Simpan gambar asli
+                    originalImage = img;
+                    currentImage = img;
+
+                    // Sembunyikan placeholder, tampilkan canvas
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    canvas.classList.remove('hidden');
+
+                    // Reset semua state
+                    textElements = [];
+                    stickerElements = [];
+                    isDrawing = false;
+                    isCropping = false;
+
+                    // Gambar gambar ke canvas
+                    drawImage();
+
+                    // Simpan ke history
+                    saveToHistory();
+
+                    showLoading(false);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawImage() {
+            if (!currentImage) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar gambar dasar dengan penyesuaian
+            drawBaseImage();
+
+            // Gambar semua elemen teks
+            textElements.forEach(text => {
+                drawTextElement(text);
+            });
+
+            // Gambar semua stiker
+            stickerElements.forEach(sticker => {
+                drawStickerElement(sticker);
+            });
+
+            // Terapkan filter CSS
+            applyFilter();
+        }
+
+        function drawBaseImage() {
+            if (!currentImage) return;
+
+            // Buat canvas sementara untuk manipulasi gambar
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = currentImage.width;
+            tempCanvas.height = currentImage.height;
+
+            // Gambar gambar asli ke canvas sementara
+            tempCtx.drawImage(currentImage, 0, 0);
+
+            // Ambil data pixel
+            let imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            let data = imageData.data;
+
+            // Terapkan penyesuaian
+            const brightnessFactor = adjustments.brightness / 100;
+            const contrastFactor = (adjustments.contrast + 100) / 100;
+            const saturationFactor = adjustments.saturation / 100;
+            const exposureFactor = adjustments.exposure / 100;
+
+            for (let i = 0; i < data.length; i += 4) {
+                // Brightness
+                data[i] = data[i] + (255 * brightnessFactor);
+                data[i + 1] = data[i + 1] + (255 * brightnessFactor);
+                data[i + 2] = data[i + 2] + (255 * brightnessFactor);
+
+                // Contrast
+                data[i] = ((data[i] / 255 - 0.5) * contrastFactor + 0.5) * 255;
+                data[i + 1] = ((data[i + 1] / 255 - 0.5) * contrastFactor + 0.5) * 255;
+                data[i + 2] = ((data[i + 2] / 255 - 0.5) * contrastFactor + 0.5) * 255;
+
+                // Exposure
+                data[i] = data[i] + (255 * exposureFactor);
+                data[i + 1] = data[i + 1] + (255 * exposureFactor);
+                data[i + 2] = data[i + 2] + (255 * exposureFactor);
+
+                // Saturasi (simplified)
+                const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2];
+                data[i] = gray + (data[i] - gray) * (1 + saturationFactor);
+                data[i + 1] = gray + (data[i + 1] - gray) * (1 + saturationFactor);
+                data[i + 2] = gray + (data[i + 2] - gray) * (1 + saturationFactor);
+
+                // Pastikan nilai dalam rentang 0-255
+                data[i] = Math.max(0, Math.min(255, data[i]));
+                data[i + 1] = Math.max(0, Math.min(255, data[i + 1]));
+                data[i + 2] = Math.max(0, Math.min(255, data[i + 2]));
+            }
+
+            // Kembalikan data yang telah dimodifikasi
+            tempCtx.putImageData(imageData, 0, 0);
+
+            // Gambar ke canvas utama dengan rotasi
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(adjustments.rotation * Math.PI / 180);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        function applyAdjustments() {
+            if (!currentImage) return;
+
+            drawImage();
+            saveToHistory();
+        }
+
+        function applyFilter() {
+            if (!currentImage) return;
+
+            // Reset semua filter CSS
+            canvas.style.filter = 'none';
+
+            // Terapkan filter berdasarkan pilihan
+            let filterString = '';
+
+            if (adjustments.blur > 0) {
+                filterString += `blur(${adjustments.blur}px) `;
+            }
+
+            switch (currentFilter) {
+                case 'grayscale':
+                    filterString += 'grayscale(100%)';
+                    break;
+                case 'sepia':
+                    filterString += 'sepia(100%)';
+                    break;
+                case 'invert':
+                    filterString += 'invert(100%)';
+                    break;
+                case 'vintage':
+                    filterString += 'sepia(70%) contrast(120%) brightness(110%)';
+                    break;
+                case 'clarendon':
+                    filterString += 'contrast(120%) saturate(150%)';
+                    break;
+                default:
+                    // Tidak ada filter khusus
+                    break;
+            }
+
+            canvas.style.filter = filterString || 'none';
+        }
+
+        function startCropping() {
+            if (!currentImage || isCropping) return;
+
+            isCropping = true;
+            document.getElementById('cropOverlay').style.display = 'block';
+
+            // Buat salinan canvas untuk cropper
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // Inisialisasi cropper
+            cropper = new Cropper(canvas, {
+                aspectRatio: NaN, // Bebas secara default
+                viewMode: 1,
+                guides: true,
+                center: true,
+                highlight: false,
+                background: false,
+                autoCropArea: 0.8,
+                responsive: true,
+                restore: false,
+                checkCrossOrigin: false,
+                checkOrientation: false,
+                modal: false,
+                scalable: false,
+                zoomable: false,
+                movable: false,
+                rotatable: false
+            });
+        }
+
+        function applyCrop() {
+            if (!cropper) return;
+
+            showLoading(true);
+
+            // Dapatkan data crop
+            const cropData = cropper.getData();
+
+            // Buat canvas baru dengan ukuran yang dipotong
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = cropData.width;
+            croppedCanvas.height = cropData.height;
+            const croppedCtx = croppedCanvas.getContext('2d');
+
+            // Gambar bagian yang dipotong ke canvas baru
+            croppedCtx.drawImage(
+                canvas,
+                cropData.x, cropData.y, cropData.width, cropData.height,
+                0, 0, cropData.width, cropData.height
+            );
+
+            // Perbarui canvas utama
+            canvas.width = cropData.width;
+            canvas.height = cropData.height;
+            ctx.drawImage(croppedCanvas, 0, 0);
+
+            // Perbarui gambar saat ini
+            const img = new Image();
+            img.onload = function() {
+                currentImage = img;
+                cancelCrop();
+                saveToHistory();
+                showLoading(false);
+            };
+            img.src = croppedCanvas.toDataURL();
+        }
+
+        function cancelCrop() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            isCropping = false;
+            document.getElementById('cropOverlay').style.display = 'none';
+            drawImage();
+        }
+
+        function addTextToImage() {
+            if (!currentImage) return;
+
+            const text = document.getElementById('textInput').value;
+            if (!text) return;
+
+            const fontSize = parseInt(document.getElementById('fontSizeSlider').noUiSlider.get());
+            const color = document.getElementById('textColorPicker').value;
+            const fontFamily = document.getElementById('fontFamilySelect').value;
+
+            const textElement = {
+                text: text,
+                fontSize: fontSize,
+                color: color,
+                fontFamily: fontFamily,
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            };
+
+            textElements.push(textElement);
+            drawImage();
+            saveToHistory();
+        }
+
+        function drawTextElement(textElement) {
+            ctx.font = `${textElement.fontSize}px ${textElement.fontFamily}`;
+            ctx.fillStyle = textElement.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(textElement.text, textElement.x, textElement.y);
+        }
+
+        function addSticker(stickerType) {
+            if (!currentImage) return;
+
+            const stickerElement = {
+                type: stickerType,
+                x: Math.random() * (canvas.width - 50) + 25,
+                y: Math.random() * (canvas.height - 50) + 25,
+                size: 50
+            };
+
+            stickerElements.push(stickerElement);
+            drawImage();
+            saveToHistory();
+        }
+
+        function drawStickerElement(stickerElement) {
+            let icon, color;
+
+            switch (stickerElement.type) {
+                case 'heart':
+                    icon = '❤';
+                    color = 'red';
+                    break;
+                case 'star':
+                    icon = '⭐';
+                    color = 'gold';
+                    break;
+                case 'smile':
+                    icon = '😊';
+                    color = 'yellow';
+                    break;
+                case 'thumbs-up':
+                    icon = '👍';
+                    color = 'blue';
+                    break;
+                case 'camera':
+                    icon = '📷';
+                    color = 'black';
+                    break;
+                case 'music':
+                    icon = '🎵';
+                    color = 'purple';
+                    break;
+                default:
+                    icon = '❤';
+                    color = 'red';
+            }
+
+            ctx.font = `${stickerElement.size}px Arial`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, stickerElement.x, stickerElement.y);
+        }
+
+        function toggleDrawing() {
+            isDrawing = !isDrawing;
+            const button = document.getElementById('startDrawingBtn');
+
+            if (isDrawing) {
+                button.textContent = 'Berhenti Menggambar';
+                button.classList.remove('bg-primary');
+                button.classList.add('bg-red-500');
+                canvas.style.cursor = 'crosshair';
+            } else {
+                button.textContent = 'Mulai Menggambar';
+                button.classList.remove('bg-red-500');
+                button.classList.add('bg-primary');
+                canvas.style.cursor = 'default';
+            }
+        }
+
+        function startDrawing(e) {
+            if (!isDrawing) return;
+
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = document.getElementById('drawColorPicker').value;
+            ctx.lineWidth = document.getElementById('brushSizeSlider').noUiSlider.get();
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        function handleTouchStart(e) {
+            if (!isDrawing) return;
+
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+            isDrawing = true;
+        }
+
+        function handleTouchMove(e) {
+            if (!isDrawing) return;
+
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const currentX = touch.clientX - rect.left;
+            const currentY = touch.clientY - rect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = document.getElementById('drawColorPicker').value;
+            ctx.lineWidth = document.getElementById('brushSizeSlider').noUiSlider.get();
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                saveToHistory();
+            }
+            isDrawing = false;
+        }
+
+        function clearDrawing() {
+            if (!currentImage) return;
+
+            // Kembalikan gambar tanpa gambar tangan
+            drawImage();
+            saveToHistory();
+        }
+
+        function applyVignette() {
+            if (!currentImage) return;
+
+            showLoading(true);
+
+            // Buat efek vignette
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+            );
+            gradient.addColorStop(0, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            saveToHistory();
+            showLoading(false);
+        }
+
+        function addNoise() {
+            if (!currentImage) return;
+
+            showLoading(true);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = Math.random() * 50 - 25; // Noise antara -25 dan 25
+                data[i] += noise; // Red
+                data[i + 1] += noise; // Green
+                data[i + 2] += noise; // Blue
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            saveToHistory();
+            showLoading(false);
+        }
+
+        function applyPixelate() {
+            if (!currentImage) return;
+
+            showLoading(true);
+
+            const pixelSize = 10;
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Kurangi ukuran canvas sementara
+            tempCanvas.width = canvas.width / pixelSize;
+            tempCanvas.height = canvas.height / pixelSize;
+
+            // Gambar gambar dengan ukuran kecil (efek pixelate)
+            tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Kembalikan ke ukuran asli dengan interpolasi nearest neighbor
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true;
+
+            saveToHistory();
+            showLoading(false);
+        }
+
+        function sharpenImage() {
+            if (!currentImage) return;
+
+            showLoading(true);
+
+            // Kernel sharpening sederhana
+            const kernel = [
+                0, -1, 0,
+                -1, 5, -1,
+                0, -1, 0
+            ];
+
+            applyConvolutionFilter(kernel);
+            saveToHistory();
+            showLoading(false);
+        }
+
+        function applyConvolutionFilter(kernel) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const tempData = new Uint8ClampedArray(data);
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    let r = 0,
+                        g = 0,
+                        b = 0;
+
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const idx = ((y + ky) * width + (x + kx)) * 4;
+                            const kidx = (ky + 1) * 3 + (kx + 1);
+
+                            r += tempData[idx] * kernel[kidx];
+                            g += tempData[idx + 1] * kernel[kidx];
+                            b += tempData[idx + 2] * kernel[kidx];
+                        }
+                    }
+
+                    const idx = (y * width + x) * 4;
+                    data[idx] = Math.max(0, Math.min(255, r));
+                    data[idx + 1] = Math.max(0, Math.min(255, g));
+                    data[idx + 2] = Math.max(0, Math.min(255, b));
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function showPanel(panelId) {
+            // Sembunyikan semua panel
+            document.getElementById('adjustmentsPanel').classList.add('hidden');
+            document.getElementById('filtersPanel').classList.add('hidden');
+            document.getElementById('cropPanel').classList.add('hidden');
+            document.getElementById('textPanel').classList.add('hidden');
+            document.getElementById('stickersPanel').classList.add('hidden');
+            document.getElementById('drawingPanel').classList.add('hidden');
+            document.getElementById('effectsPanel').classList.add('hidden');
+
+            // Tampilkan panel yang dipilih
+            document.getElementById(panelId).classList.remove('hidden');
+        }
+
+        function setActiveButton(button) {
+            // Hapus kelas aktif dari semua tombol
+            document.querySelectorAll('.grid button').forEach(btn => {
+                btn.classList.remove('border', 'border-primary');
+            });
+
+            // Tambahkan kelas aktif ke tombol yang diklik
+            button.classList.add('border', 'border-primary');
+        }
+
+        function saveToHistory() {
+            // Hapus redo history jika ada
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+
+            // Simpan state saat ini
+            history.push(canvas.toDataURL());
+            historyIndex = history.length - 1;
+
+            // Update status tombol undo/redo
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreFromHistory();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreFromHistory();
+            }
+        }
+
+        function restoreFromHistory() {
+            const img = new Image();
+            img.onload = function() {
+                // Gambar gambar dari history
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Update status tombol undo/redo
+                updateUndoRedoButtons();
+            };
+            img.src = history[historyIndex];
+        }
+
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
+        }
+
+        function resetImage() {
+            if (!originalImage) return;
+
+            // Reset semua penyesuaian
+            adjustments = {
+                brightness: 0,
+                contrast: 0,
+                saturation: 0,
+                rotation: 0,
+                exposure: 0,
+                blur: 0
+            };
+
+            // Reset slider values
+            const sliders = [
+                'brightnessSlider', 'contrastSlider', 'saturationSlider',
+                'rotationSlider', 'exposureSlider', 'blurSlider'
+            ];
+
+            sliders.forEach(sliderId => {
+                if (document.getElementById(sliderId).noUiSlider) {
+                    document.getElementById(sliderId).noUiSlider.set(0);
+                }
+            });
+
+            // Reset filter
+            currentFilter = 'none';
+            applyFilter();
+
+            // Reset elemen teks dan stiker
+            textElements = [];
+            stickerElements = [];
+
+            // Kembalikan gambar asli
+            currentImage = originalImage;
+            drawImage();
+
+            // Reset history
+            history = [canvas.toDataURL()];
+            historyIndex = 0;
+            updateUndoRedoButtons();
+        }
+
+        function downloadImage() {
+            if (!currentImage) return;
+
+            const link = document.createElement('a');
+            link.download = 'edited-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function saveImage() {
+            if (!currentImage) {
+                alert('Tidak ada gambar untuk disimpan!');
+                return;
+            }
+
+            // Simulasikan penyimpanan (dalam aplikasi nyata, ini akan mengirim ke server)
+            alert('Gambar berhasil disimpan!');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+
+</html>
